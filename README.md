@@ -1,5 +1,4 @@
-Self-organizing local social networks, more www.facebook.com/dudbro
-
+Simple GeoTracking programm with write of changing feo position in simple db.
 <table>
   <thead><tr>
     <th>Screenshots</th>
