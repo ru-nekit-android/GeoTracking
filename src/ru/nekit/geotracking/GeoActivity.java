@@ -2,13 +2,13 @@ package ru.nekit.geotracking;
 
 import java.util.ArrayList;
 
-import ru.nekit.geotracking.R;
 import ru.nekit.geotracking.adapter.GeoListAdapter;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
@@ -58,19 +58,21 @@ public class GeoActivity extends SherlockActivity implements LocationListener, O
 	protected void onCreate(Bundle savedInstanceState) 
 	{
 		setTheme(R.style.Theme_Sherlock_Light);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
 		geoView = (TextView)findViewById(R.id.geoView);
 		geoList = (ListView)findViewById(R.id.geoList);
+		
 		geoDB = new GeoPointDBAdapter(this);
 		geoDB.open();
-		//geoDB.removeAll();
 		ArrayList<GeoPoint> dataSource = geoDB.selectAll();
 		listAdapter = new GeoListAdapter(this, dataSource);
 		geoList.setAdapter(listAdapter);
 		geoList.setOnItemClickListener(this);
 		registerForContextMenu(geoList);
-		initGPS();
+		initLocationManager();
 	}
 
 	@Override
@@ -250,9 +252,8 @@ public class GeoActivity extends SherlockActivity implements LocationListener, O
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void initGPSListener()
+	private void initLocationProviderListener()
 	{
-		locationManager =  (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 		Criteria locationCritera = new Criteria();
 		locationCritera.setAltitudeRequired(false);
 		locationCritera.setBearingRequired(false);
@@ -268,18 +269,18 @@ public class GeoActivity extends SherlockActivity implements LocationListener, O
 				this);
 	}
 
-	private void initGPS() 
+	private void initLocationManager() 
 	{
-		String provider = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
-		if( provider.equals("") )
+		String allowedProviders = Settings.Secure.getString(getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+		if( allowedProviders.equals("") )
 		{
 			Toast.makeText(this, "Adjustments are necessary", Toast.LENGTH_SHORT).show();
-			Intent gpsOptionsIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);  
-			startActivityForResult(gpsOptionsIntent, 1);  
+			startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 1);  
 		}
 		else
 		{
-			initGPSListener();
+			locationManager =  (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+			initLocationProviderListener();
 			updateView();
 		}
 	}
@@ -287,7 +288,7 @@ public class GeoActivity extends SherlockActivity implements LocationListener, O
 	@Override
 	protected void onRestart() 
 	{
-		initGPSListener();
+		initLocationProviderListener();
 		super.onRestart();
 	}
 
@@ -334,7 +335,7 @@ public class GeoActivity extends SherlockActivity implements LocationListener, O
 	{
 		if(  requestCode == 1 )
 		{
-			initGPS();
+			initLocationManager();
 			return;
 		}
 		super.onActivityResult(requestCode, resultCode, data);
